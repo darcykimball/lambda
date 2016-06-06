@@ -1,8 +1,8 @@
 module BoBeep where
 
+import qualified Data.Set as S
 import Text.Parsec
 import Text.Parsec.Token
-import qualified Data.Set as S
 
 import qualified Lambda as L
 
@@ -37,11 +37,14 @@ type BoundNames = S.Set SynName
 
 type BoBeepParser a = Parsec String BoundNames a
 
+parseSrc :: SourceName -> String -> Either ParseError Program
+parseSrc = runParser (parseProgram <* eof) S.empty
+
 parseProgram :: BoBeepParser Program
 parseProgram = many1 parseBoBeep
 
 parseBoBeep :: BoBeepParser BoBeep
-parseBoBeep = parseDecl <|> parseStmt
+parseBoBeep = (try parseStmt <|> parseDecl) <* endSymbol
 
 parseDecl :: BoBeepParser BoBeep
 parseDecl = do
@@ -61,10 +64,13 @@ parseStmt = do
   term <- L.parseTerm
   bindings <- getState
   let unknownVars =
-        filter (not . flip S.member bindings) $ L.findUnboundVars term
+        filter (not . flip S.member bindings) $ L.findUnboundVarsTopLevel term
   if null unknownVars
     then return $ Stmt term
     else fail $ unlines $ fmap nameNotFoundMsg unknownVars
   where
     nameNotFoundMsg name =
       "Name " ++ name ++ " is either unbound or undeclared"
+
+endSymbol :: BoBeepParser ()
+endSymbol = () <$ semi L.lexer 
