@@ -3,7 +3,6 @@ module JavaScript where
 import Text.Parsec
 
 import qualified Lambda as L
-import qualified Combinator as C
 
 -- Very minimal subset of javascript
 --   -only unary functions
@@ -35,45 +34,6 @@ compile' (FnDef arg mname body) =
   maybe "" (++ " = ") mname ++ "function" ++
     (wrapSpace . wrapParens) arg ++ block ("return " ++ compile' body ++ ";")
 
-translateSKI :: (String, String, String) -> String -> Either ParseError Expr
-translateSKI combNames =
-  fmap (translateSKI' combNames) . parse C.parseTopLevel "(Translating to JS)"
-
-translateSKI' ::
-  (String, String, String) -> -- Name of S, K, and I
-  C.SKI ->
-  Expr
-translateSKI' names@(s,k,i) skiExpr =
-  case skiExpr of
-    C.S -> Var s
-    C.K -> Var k
-    C.I -> Var i
-    C.App t1 t2 -> FnCall (translateSKI' names t1) (translateSKI' names t2)
-    
-dumpSKI ::
-  (String, String, String) -> -- Name of S, K, and I
-  Prog
-dumpSKI (s,k,i) =
-  [ 
-    -- S
-    FnDef "f" (Just s)
-      (FnDef "g" Nothing 
-        (FnDef "x" Nothing 
-          (FnCall
-            (FnCall (Var "f") (Var "x"))
-            (FnCall (Var "g") (Var "x"))
-          )
-        )
-      )
-    ,
-    -- K
-    FnDef "x" (Just k)
-      (FnDef "y" Nothing (Var "x"))
-    ,
-    -- I
-    FnDef "x" (Just i) (Var "x")
-  ]
-            
 -- Utility fns
 
 block = ("{ " ++) . (++ " }")
