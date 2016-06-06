@@ -1,11 +1,12 @@
 module Lambda where
 
+import Control.Monad.Reader
 import qualified Data.Set as S
 import Text.Parsec
-import Text.Parsec.Language
-import qualified Text.Parsec.Token as T
 import Text.Parsec.Char
+import Text.Parsec.Language
 import Text.Parsec.String
+import qualified Text.Parsec.Token as T
 
 type LambdaParser s a = Parsec String s a
 
@@ -20,9 +21,22 @@ data Term var =
 
 type Term' = Term VarName
 
-findUnboundVars :: Eq var => Term var -> [var]
-findUnboundVars = undefined
+-- XXX: shitty Ord constraint
+findUnboundVarsTopLevel :: Ord var => Term var -> [var]
+findUnboundVarsTopLevel term = runReader (findUnboundVars term) S.empty 
 
+findUnboundVars :: Ord var => Term var -> Reader (S.Set var) [var]
+findUnboundVars (Var v) = do
+  boundVars <- ask
+  if v `S.member` boundVars
+    then return [] 
+    else return [v]
+findUnboundVars (Abs arg body) =
+  local (S.insert arg) $ findUnboundVars body    
+findUnboundVars (App t1 t2) =
+  (++) <$> findUnboundVars t1 <*> findUnboundVars t2
+  
+  
 {-
  - Parsing
  -}
