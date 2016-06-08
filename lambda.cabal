@@ -17,6 +17,8 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lambda
                      , JavaScript
+                     , Python 
+                     , Perl
                      , BoBeep
                      , Imperative
   build-depends:       base >= 4.7 && < 5
@@ -31,6 +33,8 @@ executable lambda-exe
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , lambda
+                     , optparse-applicative
+                     , parsec
   default-language:    Haskell2010
 
 test-suite lambda-test
