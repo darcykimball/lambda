@@ -1,3 +1,9 @@
+import Control.Monad.Trans.Resource
+import Data.Conduit
+import qualified Data.Conduit.Binary as CB
+import qualified Data.Conduit.List as CL
+import Data.Conduit.Text
+import qualified Data.Text as T
 import Options.Applicative
 import qualified Text.Parsec as Parsec
 import System.IO
@@ -11,11 +17,18 @@ import qualified Perl as P
 main :: IO ()
 main = do
   (inputFile, targetLang) <- execParser opts 
-  src <- readFile inputFile
+
+  src <- T.unpack <$> runResourceT (CB.sourceFile inputFile $$ decodeUtf8 $= textSink)
+
   either print print $ translate targetLang inputFile src
   where
     opts = info (helper <*> (liftA2 (,) file lang)) (fullDesc <> progDesc desc)
     desc = "Translate some lambda terms into JavaScript, Python, or Perl."
+      
+    textSink :: MonadResource m => Sink T.Text m T.Text
+    textSink = do
+      mtext <- await
+      maybe (return T.empty) return mtext
   
 data Lang = JavaScript | Python | Perl deriving (Eq, Show, Read)
 
