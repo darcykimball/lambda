@@ -20,7 +20,7 @@ main = do
 
   src <- T.unpack <$> runResourceT (CB.sourceFile inputFile $$ decodeUtf8 $= textSink)
 
-  either print print $ translate targetLang inputFile src
+  either print putStr $ translate targetLang inputFile src
   where
     opts = info (helper <*> (liftA2 (,) file lang)) (fullDesc <> progDesc desc)
     desc = "Translate some lambda terms into JavaScript, Python, or Perl."

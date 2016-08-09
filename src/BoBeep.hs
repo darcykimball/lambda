@@ -38,7 +38,7 @@ type BoundNames = S.Set SynName
 type BoBeepParser a = Parsec String BoundNames a
 
 parseSrc :: SourceName -> String -> Either ParseError Program
-parseSrc = runParser (parseProgram <* eof) S.empty
+parseSrc = runParser (parseProgram <* spaces <* eof) S.empty
 
 parseProgram :: BoBeepParser Program
 parseProgram = many1 parseBoBeep
@@ -54,6 +54,8 @@ parseDecl = do
   term <- L.parseTerm
   if name `S.member` bindings
     then fail $ "Name " ++ name ++ " already bound!"
+    -- FIXME: need to check that body of fn only contains abstracted vars and
+    -- synonym names (bound already)
     else modifyState (S.insert name) >> return (Decl name term)
   where
     bind = symbol L.lexer ":="

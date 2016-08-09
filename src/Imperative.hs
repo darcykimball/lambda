@@ -36,7 +36,15 @@ translate = fmap translateBoBeep
 -- Translate a single statement or decl from BoBeep
 translateBoBeep :: B.BoBeep -> Expr
 translateBoBeep (B.Stmt term) = translateTerm term
-translateBoBeep (B.Decl name term) = nameFunction name (translateTerm term)
+-- Hm... FIXME
+translateBoBeep (B.Decl name term) = 
+  case term of
+    -- This an abstraction
+    L.Abs arg body -> FnDef (Just name) arg (translateTerm term)
+    -- This is just an alias to something else
+    t -> FnDef (Just name) emptyArg (translateTerm t)
+  where
+    emptyArg = ""
 
 -- Translate a single lambda term 
 translateTerm :: L.Term' -> Expr
